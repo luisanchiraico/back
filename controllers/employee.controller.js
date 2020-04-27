@@ -16,7 +16,7 @@ async function login(req,res){
         if(!services.validations.isValidNumber(body.dni)){
             return res.status(400).json({msg:"INVALID.DNI"});
         }
-        if(!services.validations.isValidNumber(body.password)){
+        if(!services.validations.isValidString(body.password)){
             return res.status(400).json({msg:"INVALID.PASSWORD"});
         }
         const data = await services.employees.loginEmployee(body.dni,body.password);
@@ -68,10 +68,10 @@ async function getInfoByEmployee(req,res){
     try {
         const { dni } = req.params;
         const data = await services.employees.getEmployeeInfo(dni);
-        if(!!data.length){
-            return res.status(200).json(data[0]);
+        if(!data.length){
+            return res.status(400).json({msg:"USER.NOT.FOUND"});
         }
-        return res.status(400).json({msg:"USER.NOT.FOUND"});
+        return res.status(200).json(data[0]);
     } catch (error) {
         console.error(error);
         res.status(500).json({msg:"GLOBAL.ERROR"});   
@@ -82,9 +82,8 @@ async function getInfoByEmployee(req,res){
 async function getClientsByEmployee(req,res){
     try {
         const { dni } = req.params;
-        const { limit, offset, search, type } = req.query;
-        //validations require
-        const data = await services.clients.getClientsByEmployee(dni,limit,offset, search, type);
+        const { limit, offset, search, status } = req.query;
+        const data = await services.clients.getClientsByEmployee(dni,limit,offset, search, status);
         return res.status(200).json(data);
     } catch (error) {
         console.error(error);
@@ -137,11 +136,72 @@ async function updateEmployee(req,res){
     }
 }
 
+async function requestRecoveryPassword(req,res){
+    try {
+        const { dni } = req.params;
+        //get user dni, name, email
+        if(!services.validations.isValidNumber(dni)){
+            return res.status(400).json({msg:"INVALID.DNI"});
+        }
+        const user = await services.employees.getEmployee(dni);
+        if(!user.length){
+            return res.status(400).json({msg:"USER.NOT.FOUND"});
+        }
+        if(user[0].estado != config.constants.EMPLOYEE.STATUS.ACTIVE){
+            return res.status(400).json({msg:"USER.INACTIVE"});
+        }
+        if(!services.validations.isValidString(user[0].nombre) || !services.validations.isValidEmail(user[0].email)){
+            return res.status(400).json({msg:"INVALID.DATA"});
+        }
+        const newPassword = Math.random().toString(32).slice(-6);
+        const updatePassword = await services.employees.updatePassword(dni, newPassword);
+        let response  = await services.mailer.sendNewPasswordEmail(user[0].nombre,user[0].email,newPassword);
+        return res.status(200).json({msg:"GLOBAL.OK"});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({msg:"GLOBAL.ERROR"});   
+    }
+}
+
+async function changePassword(req,res){
+    try {
+        const { dni } = req.params;
+        const body = req.body;
+        const requiredKeys = [
+            'password',
+            'confirm'
+        ]
+        if(!services.validations.isValidBody(requiredKeys,body)){
+            return res.status(400).json({msg:"INVALID.BODY"});
+        }
+        if(!services.validations.isValidString(body.password)){
+            return res.status(400).json({msg:"INVALID.PASSWORD"});
+        }
+        if(!services.validations.isValidNumber(dni)){
+            return res.status(400).json({msg:"INVALID.DNI"});
+        }
+        if(body.password != body.confirm){
+            return res.status(400).json({msg:"NO.MATCH.PASSWORD"});
+        }
+
+        //update password
+        const updatePassword = await services.employees.updatePassword(dni, body.password);
+
+        return res.status(200).json({msg:"GLOBAL.OK"});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({msg:"GLOBAL.ERROR"});   
+    }
+}
+
+
 module.exports = {
     login,
     getEmployee,
     getTeamByEmployee,
     getInfoByEmployee,
     getClientsByEmployee,
-    updateEmployee
+    updateEmployee,
+    requestRecoveryPassword,
+    changePassword
 }

@@ -11,4 +11,6 @@ api.get('/get-employee-results/:dni', controller.getInfoByEmployee)
 api.get('/get-clients/:dni',controller.getClientsByEmployee);
 api.put('/update-employee/:dni', controller.updateEmployee);
 
+api.post('/recovery-password/:dni',controller.requestRecoveryPassword);
+api.put('/update-password/:dni',controller.changePassword);
 module.exports = api;

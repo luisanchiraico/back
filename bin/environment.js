@@ -10,17 +10,5 @@ module.exports = {
         database:  'dbintegrado',
         multipleStatements: true
     },
-    AMAZON_BUCKET_URL:  'https://s3-us-west-2.amazonaws.com/fitco-storage/',
-    AMAZON_FOLDER_NAME: {
-        stockVoucher: 'stockVoucher/',
-        userDocuments: 'userDocuments/',
-        brandedWebs: 'brandedWebs/',
-        landingOrganization: 'landingOrga/',
-        profiles: 'profiles/',
-        logos: 'logos/',
-        plan: 'plans/',
-        fitcoUser: 'fitcoUser/',
-        logos_test: 'logos-develop/',
-        salesInvoice: 'sales-invoice/'
-    }
+    SENGRID_API_KEY : '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'
 }

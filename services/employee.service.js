@@ -29,10 +29,10 @@ function getEmployee(dni){
             empleado.email,
             empleado.telefono,
             empleado.cargo,
-            empleado.estado
+            empleado.estado,
+            empleado.foto
         FROM empleado 
         WHERE empleado.nrodoc = '${dni}'
-        #AND empleado.estado = '${config.constants.EMPLOYEE.STATUS.ACTIVE}'
         AND empleado.cargo IN ('${config.constants.EMPLOYEE.POSITION.SALES_AGENT}','${config.constants.EMPLOYEE.POSITION.SALES_SUPERVISOR}');`
         return queryService.get(sentence);
 }
@@ -81,44 +81,44 @@ function getEmployeeInfo(dni){
             )	
         ) AS products,
         (
-            SELECT 
-                COUNT(1)
-            FROM cliente_estado
-            WHERE cliente_estado.clienteId IN (
-                SELECT 
-                    clientes.idclientes 
-                FROM clientes 
-                WHERE clientes.empleadoId = empleado.nrodoc
-            )
-            AND cliente_estado.estadoId = 'E1'
+            SELECT COUNT(1)
+            FROM clientes
+            WHERE clientes.empleadoId = empleado.nrodoc
+            AND (
+                    SELECT cliente_estado.estadoId
+                    FROM cliente_estado
+                    WHERE cliente_estado.clienteId = clientes.idclientes
+                    ORDER BY cliente_estado.fecha DESC
+                    LIMIT 1
+            ) = 'E1'
         ) AS negociando,
         (
-            SELECT 
-                COUNT(1)
-            FROM cliente_estado
-            WHERE cliente_estado.clienteId IN (
-                SELECT 
-                    clientes.idclientes 
-                FROM clientes 
+                SELECT COUNT(1)
+                FROM clientes
                 WHERE clientes.empleadoId = empleado.nrodoc
-            )
-            AND cliente_estado.estadoId = 'E2'
+                AND (
+                        SELECT cliente_estado.estadoId
+                        FROM cliente_estado
+                        WHERE cliente_estado.clienteId = clientes.idclientes
+                        ORDER BY cliente_estado.fecha DESC
+                        LIMIT 1
+                ) = 'E2'
         ) AS si_verbal,
         (
-            SELECT 
-                COUNT(1)
-            FROM cliente_estado
-            WHERE cliente_estado.clienteId IN (
-            SELECT 
-                    clientes.idclientes 
-                FROM clientes 
+                SELECT COUNT(1)
+                FROM clientes
                 WHERE clientes.empleadoId = empleado.nrodoc
-            )
-            AND cliente_estado.estadoId = 'E3'
+                AND (
+                        SELECT cliente_estado.estadoId
+                        FROM cliente_estado
+                        WHERE cliente_estado.clienteId = clientes.idclientes
+                        ORDER BY cliente_estado.fecha DESC
+                        LIMIT 1
+                ) = 'E3'
         ) AS instalado
     FROM empleado
     WHERE empleado.nrodoc = '${dni}'
-    AND empleado.estado = 'ACTIVO';
+    AND empleado.estado = '${config.constants.EMPLOYEE.STATUS.ACTIVE}';
     `;
     return queryService.get(sentence);
 }
@@ -142,10 +142,26 @@ function updateEmployee(dni,data){
     
 }
 
+function updatePassword(dni,newPassword){
+    let updData = {
+        clave : newPassword
+    };
+
+    let sentence = `
+        UPDATE empleado
+        SET ?
+        WHERE empleado.nrodoc = ${dni}
+    `;
+
+    return queryService.update(sentence, updData);
+    
+}
+
 module.exports = {
     loginEmployee,
     getEmployee,
     getTeam,
     getEmployeeInfo,
-    updateEmployee
+    updateEmployee,
+    updatePassword
 };

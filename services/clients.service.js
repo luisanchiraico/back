@@ -30,33 +30,45 @@ function addClientStatus(clientId, statusId, codigo){
     return queryService.insertOne(sentence,insertData);
 }
 
-function getClientsByEmployee(dni, limit, offset, search, type){
+function getClientsByEmployee(dni, limit, offset, search, status){
     let searchBy = ``;
     if(!!search && search != null){
         searchBy = `AND REPLACE(UPPER(CONCAT(IFNULL(clientes.nombre,''),IFNULL(clientes.apellido,''))),' ','') LIKE UPPER(REPLACE('%${search}%',' ',''))`
     }
-    let conditionByType = type == 0 ? `
-    WHERE clientes.empleadoId 
-    IN (
-            SELECT 
-                empleado.nrodoc 
-            FROM empleado 
-            WHERE empleado.supervisor = '${dni}' 
-            AND empleado.estado = '${config.constants.EMPLOYEE.STATUS.ACTIVE}' 
-            AND empleado.cargo IN ('${config.constants.EMPLOYEE.POSITION.SALES_AGENT}', '${config.constants.EMPLOYEE.POSITION.SALES_SUPERVISOR}')
-        )
-    ` : ` WHERE clientes.empleadoId = '${dni}' `;
 
+    let typeStatus = ``;
+    if(!!status && status!= null && status!='0'){
+        switch (status) {
+            case '1': 
+            typeStatus = `HAVING \`estado\` LIKE 'E1'`;
+                break;
+            case '2': 
+            typeStatus = `HAVING \`estado\` LIKE 'E2'`;
+                break;
+            case '3': 
+            typeStatus = `HAVING \`estado\` LIKE 'E3'`;
+                break;
+        }
+    }
     let sentence = `
     SELECT 
         clientes.idclientes,
         clientes.nombre,
         clientes.apellido,
         clientes.telefono,
-        clientes.empresa 
+        clientes.empresa,
+        (
+            SELECT 
+                cliente_estado.estadoId 
+            FROM cliente_estado
+            WHERE cliente_estado.clienteId = clientes.idclientes
+            ORDER BY cliente_estado.fecha DESC
+            LIMIT 1
+        ) AS estado
     FROM clientes
-    ${conditionByType}
+    WHERE clientes.empleadoId = '${dni}'
     ${searchBy} 
+    ${typeStatus}
     ORDER BY clientes.fecha DESC
     ${Number.isInteger(Number.parseInt(limit)) ? ` LIMIT ${limit} ` : ` `} ${Number.isInteger(Number.parseInt(offset)) ? ` OFFSET ${offset}` : ` ` }
     `;
