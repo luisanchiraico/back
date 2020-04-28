@@ -11,4 +11,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use('', api);
 
+app.use('/health', function (req, res, next) {
+    return res.json({status: 'UP'});
+});
+
 module.exports = app;
