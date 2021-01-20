@@ -91,7 +91,7 @@ function getEmployeeInfo(dni){
                     ORDER BY cliente_estado.fecha DESC
                     LIMIT 1
             ) = 'E1'
-        ) AS negociando,
+        ) AS contactado,
         (
                 SELECT COUNT(1)
                 FROM clientes
@@ -103,7 +103,7 @@ function getEmployeeInfo(dni){
                         ORDER BY cliente_estado.fecha DESC
                         LIMIT 1
                 ) = 'E2'
-        ) AS si_verbal,
+        ) AS negociando,
         (
                 SELECT COUNT(1)
                 FROM clientes
@@ -115,7 +115,19 @@ function getEmployeeInfo(dni){
                         ORDER BY cliente_estado.fecha DESC
                         LIMIT 1
                 ) = 'E3'
-        ) AS instalado
+        ) AS despacho,
+        (
+            SELECT COUNT(1)
+            FROM clientes
+            WHERE clientes.empleadoId = empleado.nrodoc
+            AND (
+                    SELECT cliente_estado.estadoId
+                    FROM cliente_estado
+                    WHERE cliente_estado.clienteId = clientes.idclientes
+                    ORDER BY cliente_estado.fecha DESC
+                    LIMIT 1
+            ) = 'E4'
+    ) AS rechazado
     FROM empleado
     WHERE empleado.nrodoc = '${dni}'
     AND empleado.estado = '${config.constants.EMPLOYEE.STATUS.ACTIVE}';

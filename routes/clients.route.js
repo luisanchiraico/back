@@ -7,4 +7,6 @@ api.post('/',controller.addClient);
 api.get('/:id', controller.getClient);
 api.post('/status/:id',controller.addNewStatus);
 api.put('/update-client/:id', controller.updateClient)
+api.get('/client-info/sources', controller.getClientSources);
+api.get('/client-info/reject-reasons', controller.getClientRejectReasons);
 module.exports = api;

@@ -57,7 +57,7 @@ async function addClient(req,res){
         }
         
         let clientId = await services.clients.saveClient(body)
-        let agregarEstado = await services.clients.addClientStatus(clientId,config.constants.CLIENTS.STATUS.DEFAUT_STATUS_ID);
+        let agregarEstado = await services.clients.addClientStatus(clientId, config.constants.CLIENTS.STATUS.DEFAUT_STATUS_ID);
         let agregarProductos = await services.products.addProductsToClient(clientId,body.products);
         
         return res.status(200).json({msg:'GLOBAL.OK', clientId: clientId });
@@ -90,7 +90,7 @@ async function addNewStatus(req,res){
             return res.status(400).json({msg:"INVALID.DATA"});
         }
 
-        const saveStatus = await services.clients.addClientStatus(id,body.id,body.codigo);
+        const saveStatus = await services.clients.addClientStatus(id,body.id,body.codigo, body.nro_pedido, body.reject_reason_id, body.reject_comment);
         return res.status(200).json({msg:'GLOBAL.OK'});
     } catch (error) {
         console.error(error);
@@ -163,10 +163,32 @@ async function updateClient(req,res){
     }   
 }
 
+async function getClientSources(req,res){
+    try {;
+        const sources = await services.clients.getClientSources();
+        return res.status(200).json(sources);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({msg:"GLOBAL.ERROR"});
+    }
+}
+
+async function getClientRejectReasons(req,res){
+    try {;
+        const rejectReasons = await services.clients.getRejectReasons();
+        return res.status(200).json(rejectReasons);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({msg:"GLOBAL.ERROR"});
+    }
+}
+
 
 module.exports = {
     addClient,
     getClient,
     addNewStatus,
-    updateClient
+    updateClient,
+    getClientSources,
+    getClientRejectReasons
 }

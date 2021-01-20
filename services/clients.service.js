@@ -10,7 +10,10 @@ function saveClient(data){
         telefono: data.telefono,
         empresa: data.razon_social.toUpperCase(),
         ruc: data.ruc,
-        empleadoId: data.empleadoId
+        empleadoId: data.empleadoId,
+        tipo_ruc: data.tipo_ruc,
+        fuente_cliente_id:  data.fuente_cliente_id,
+        dni: data.dni
     };
     let sentence = `
         INSERT INTO clientes SET ?
@@ -18,11 +21,14 @@ function saveClient(data){
     return queryService.insertOne(sentence,insertData);
 }
 
-function addClientStatus(clientId, statusId, codigo){
+function addClientStatus(clientId, statusId, codigo, nro_pedido, reasonId, comment){
     const insertData = {
         clienteId : clientId,
         estadoId : statusId,
-        codigo : !!codigo ? codigo : null
+        codigo : !!codigo ? codigo : null,
+        nro_pedido ,
+        rechazo_motivoId:reasonId,
+        comentario_rechazo: comment
     };
     let sentence = `
         INSERT INTO cliente_estado SET ?
@@ -37,19 +43,10 @@ function getClientsByEmployee(dni, limit, offset, search, status){
     }
 
     let typeStatus = ``;
-    if(!!status && status!= null && status!='0'){
-        switch (status) {
-            case '1': 
-            typeStatus = `HAVING \`estado\` LIKE 'E1'`;
-                break;
-            case '2': 
-            typeStatus = `HAVING \`estado\` LIKE 'E2'`;
-                break;
-            case '3': 
-            typeStatus = `HAVING \`estado\` LIKE 'E3'`;
-                break;
-        }
+    if(!!status && status!='0'){
+        typeStatus = `HAVING \`estado\` LIKE 'E${status}'`;
     }
+    
     let sentence = `
     SELECT 
         clientes.idclientes,
@@ -76,25 +73,31 @@ function getClientsByEmployee(dni, limit, offset, search, status){
 }
 
 function getClient(id){
-    let sentence = `
+    const sentence = `
     SELECT 
-        clientes.idclientes,
-        clientes.nombre,
-        clientes.apellido,
-        clientes.telefono,
-        clientes.empresa,
-        clientes.ruc,
-        clientes.correo,
-        (
-            SELECT 
-                cliente_estado.estadoId 
-            FROM cliente_estado
-            WHERE cliente_estado.clienteId = clientes.idclientes
-            ORDER BY cliente_estado.fecha DESC
-            LIMIT 1
-        ) AS estado
-    FROM clientes
-    WHERE clientes.idclientes = ${id};
+        c.idclientes,
+        c.nombre,
+        c.apellido,
+        c.telefono,
+        c.empresa,
+        c.ruc,
+        c.dni,
+        c.tipo_ruc,
+        c.correo,
+        ce.estadoId as 'estado',
+        ce.rechazo_motivoId,
+        mr.nombre as 'motivo_rechazo',
+        ce.comentario_rechazo as comentario_rechazo,
+        fc.nombre as fuente,
+        fc.idfuente_cliente
+    FROM clientes c
+    LEFT JOIN cliente_estado ce ON c.idclientes = ce.clienteId
+    LEFT JOIN motivo_rechazo mr ON mr.idmotivo_rechazo = ce.rechazo_motivoId
+    LEFT JOIN estado e ON e.idestado = ce.estadoId
+    LEFT JOIN fuente_cliente fc ON fc.idfuente_cliente = c.fuente_cliente_id
+    WHERE c.idclientes = ${id}
+	 ORDER BY ce.fecha DESC
+    LIMIT 1;
 
     SELECT
         mantenimiento_pokets.idmantenimiento_pokets AS id,
@@ -115,7 +118,11 @@ function updateClient(id,data){
         correo: data.correo.toUpperCase(),
         telefono: data.telefono,
         empresa: data.empresa.toUpperCase(),
-        ruc: data.ruc
+        ruc: data.ruc,
+        tipo_ruc: data.tipo_ruc,
+        fuente_cliente_id:  data.fuente_cliente_id,
+        dni: data.dni
+
     };
     let sentence = `
         UPDATE clientes
@@ -125,10 +132,20 @@ function updateClient(id,data){
     return queryService.update(sentence,body);
 }
 
+function getClientSources(){
+    return queryService.get(`SELECT * FROM fuente_cliente;`);
+}
+
+function getRejectReasons(){
+    return queryService.get(`SELECT * FROM motivo_rechazo;`);
+}
+
 module.exports = {
     saveClient,
     addClientStatus,
     getClientsByEmployee,
     getClient,
-    updateClient
+    updateClient,
+    getClientSources,
+    getRejectReasons
 };
